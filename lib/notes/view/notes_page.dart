@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:notes_app/notes/domain/models/note.dart';
 import 'package:notes_app/notes/view/new_note_page.dart';
+import 'package:notes_app/notes/view/widgets/note_list_item.dart';
 import 'package:notes_app/widgets/empty_stub.dart';
 
 class NotesPage extends StatefulWidget {
@@ -23,6 +24,10 @@ class _NotesPageState extends State<NotesPage> {
     }
   }
 
+  void _deleteNote(Note note) {
+    setState(() => _notes.removeWhere((n) => n.id == note.id));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,19 +42,14 @@ class _NotesPageState extends State<NotesPage> {
               icon: Icons.note_alt_outlined,
               message: 'No notes yet.\nTap + to create your first note.',
             )
-          : ListView.builder(
+          : ListView.separated(
               itemCount: _notes.length,
+              separatorBuilder: (context, index) => const Divider(height: 1),
               itemBuilder: (context, index) {
                 final note = _notes[index];
-                return ListTile(
-                  title: Text(
-                    note.title.isEmpty ? 'Untitled' : note.title,
-                  ),
-                  subtitle: Text(
-                    note.content,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                return NoteListItem(
+                  note: note,
+                  onDismissed: () => _deleteNote(note),
                 );
               },
             ),
