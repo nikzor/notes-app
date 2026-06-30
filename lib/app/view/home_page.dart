@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:notes_app/notes/domain/repositories/notes_repository.dart';
 import 'package:notes_app/notes/view/notes_page.dart';
 import 'package:notes_app/search/view/search_page.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({required this.notesRepository, super.key});
+
+  final NotesRepository notesRepository;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -12,7 +15,10 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
 
-  static const _pages = [NotesPage(), SearchPage()];
+  late final _pages = [
+    NotesPage(notesRepository: widget.notesRepository),
+    const SearchPage(),
+  ];
 
   @override
   Widget build(BuildContext context) {
