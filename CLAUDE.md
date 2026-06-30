@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 A Flutter notes app whose end goal is **fully offline semantic search** over notes, using an on-device Gemma model via `flutter_gemma` — no servers, everything stored and processed on-device.
 
 - Target platform: **iOS first** (iOS 16+, A12 Bionic+, ideally 4GB+ RAM).
-- The codebase is currently an early UI prototype: navigation and the Notes screens are built with local widget state (no persistence, no bloc, no embeddings yet). See "Planned architecture" below for where this is headed.
+- The `notes` feature now has a full VGV 4-layer slice (data → domain → bloc → view) backed by Drift/SQLite. Search and the on-device Gemma embeddings/model lifecycle are not implemented yet. See "Planned architecture" below for where this is headed.
 
 ## Commands
 
@@ -23,13 +23,18 @@ There is no test suite yet — when adding one, standard `flutter test` / `flutt
 
 ## Current architecture
 
-Plain `Navigator`-based navigation (`MaterialPageRoute`, `Navigator.push`/`pop`), no router package. Screens use `StatefulWidget` + local state rather than blocs — that wiring comes later.
+Plain `Navigator`-based navigation (`MaterialPageRoute`, `Navigator.push`/`pop`), no router package. The `notes` feature follows the VGV 4-layer pattern end to end (data → domain → bloc → view); `search` is still a UI-only stub.
 
-- [lib/notes_app.dart](lib/notes_app.dart) — root `MaterialApp`, points `home` at `HomePage`.
-- [lib/app/view/home_page.dart](lib/app/view/home_page.dart) — app shell: `BottomNavigationBar` + `IndexedStack` switching between the Notes and Search tabs, preserving each tab's state across switches (tab switching does *not* go through `Navigator`).
-- `lib/notes/` — Notes feature:
-  - [domain/models/note.dart](lib/notes/domain/models/note.dart) — placeholder `Note` model (id, title, content, updatedAt); will move under a proper data/domain split once persistence is added.
-  - [view/notes_page.dart](lib/notes/view/notes_page.dart) — list of notes with an empty-state stub, `+` button pushes the editor via `Navigator`.
+- [lib/notes_app.dart](lib/notes_app.dart) — root `MaterialApp`; takes a `NotesRepository` (constructed in [lib/main.dart](lib/main.dart)) and passes it down to `HomePage`.
+- [lib/app/view/home_page.dart](lib/app/view/home_page.dart) — app shell: `BottomNavigationBar` + `IndexedStack` switching between the Notes and Search tabs, preserving each tab's state across switches (tab switching does *not* go through `Navigator`). This is the composition point where the `notes` feature's `BlocProvider<NotesCubit>` is created from the injected `NotesRepository`, wrapping `NotesPage` — `NotesRepository` is never passed into the view layer directly.
+- `lib/notes/` — Notes feature (VGV 4-layer):
+  - `data/sources/notes_database.dart` — `NotesDatabase` (`@DriftDatabase`), opened via `drift_flutter`'s `driftDatabase()`.
+  - `data/models/note_dto.dart` — Drift `Notes` table definition (`@DataClassName('NoteDto')`).
+  - `data/sources/notes_local_data_source.dart` — `NotesLocalDataSource` abstract class + `DriftNotesLocalDataSource` impl; raw CRUD over the Drift table.
+  - `domain/models/note.dart` — domain `Note` model (id, title, content, updatedAt).
+  - `domain/repositories/notes_repository.dart` + `notes_repository_impl.dart` — `NotesRepository` abstraction and Drift-backed impl; maps `NoteDto` ⇄ domain `Note`, keeping Drift types out of everything above it.
+  - `bloc/notes_cubit.dart` + `notes_state.dart` — `NotesCubit` (`Cubit<NotesState>`), the only thing the view layer talks to; owns `NotesRepository` and exposes `NotesState { status, notes }`.
+  - [view/notes_page.dart](lib/notes/view/notes_page.dart) — `StatelessWidget`; reads `NotesCubit` via `context.read`/`BlocBuilder`, dispatches `loadNotes`/`addNote`/`updateNote`/`deleteNote` — never touches `NotesRepository` directly.
   - [view/note_editor_page.dart](lib/notes/view/note_editor_page.dart) — single screen used for **both** creating and viewing/editing a note (`initialNote: null` → create mode). Avoid re-splitting this into separate create/edit screens.
   - [view/widgets/note_list_item.dart](lib/notes/view/widgets/note_list_item.dart) — `Dismissible` list item (swipe to delete) with `onTap` to open the editor.
 - `lib/search/view/search_page.dart` — search UI shell only (search field + empty/no-results stubs); not wired to any data source yet.
@@ -37,7 +42,7 @@ Plain `Navigator`-based navigation (`MaterialPageRoute`, `Navigator.push`/`pop`)
 
 ## Planned architecture (not yet implemented)
 
-The project is meant to grow into a **VGV 4-layer architecture** (data → domain → bloc → view) per feature, using `flutter_bloc` for state management:
+`search` and `model` features still need to be built out using the same VGV 4-layer pattern (data → domain → bloc → view) established by `notes`:
 
 ```
 lib/<feature>/
@@ -49,7 +54,7 @@ lib/<feature>/
 └── view/                # widgets, pages
 ```
 
-Planned features beyond `notes`: `search` (FTS5 + cosine similarity hybrid search) and `model` (flutter_gemma lifecycle: init/download).
+Planned: `search` (FTS5 + cosine similarity hybrid search) and `model` (flutter_gemma lifecycle: init/download).
 
 Key technical decisions for that future work:
 - **Storage**: Drift (SQLite) with FTS5 for full-text search.

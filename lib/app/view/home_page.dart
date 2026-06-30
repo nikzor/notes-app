@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:notes_app/notes/bloc/notes_cubit.dart';
 import 'package:notes_app/notes/domain/repositories/notes_repository.dart';
 import 'package:notes_app/notes/view/notes_page.dart';
 import 'package:notes_app/search/view/search_page.dart';
@@ -16,7 +18,10 @@ class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
 
   late final _pages = [
-    NotesPage(notesRepository: widget.notesRepository),
+    BlocProvider(
+      create: (_) => NotesCubit(widget.notesRepository)..loadNotes(),
+      child: const NotesPage(),
+    ),
     const SearchPage(),
   ];
 
