@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:notes_app/notes/domain/models/note.dart';
 
-class NewNotePage extends StatefulWidget {
-  const NewNotePage({super.key});
+class NoteEditorPage extends StatefulWidget {
+  const NoteEditorPage({this.initialNote, super.key});
+
+  final Note? initialNote;
 
   @override
-  State<NewNotePage> createState() => _NewNotePageState();
+  State<NoteEditorPage> createState() => _NoteEditorPageState();
 }
 
-class _NewNotePageState extends State<NewNotePage> {
-  final _titleController = TextEditingController();
-  final _contentController = TextEditingController();
+class _NoteEditorPageState extends State<NoteEditorPage> {
+  late final _titleController =
+      TextEditingController(text: widget.initialNote?.title);
+  late final _contentController =
+      TextEditingController(text: widget.initialNote?.content);
 
   @override
   void dispose() {
@@ -29,7 +33,8 @@ class _NewNotePageState extends State<NewNotePage> {
     Navigator.pop(
       context,
       Note(
-        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        id: widget.initialNote?.id ??
+            DateTime.now().microsecondsSinceEpoch.toString(),
         title: title,
         content: content,
         updatedAt: DateTime.now(),
@@ -39,9 +44,10 @@ class _NewNotePageState extends State<NewNotePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isNewNote = widget.initialNote == null;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('New note'),
+        title: Text(isNewNote ? 'New note' : 'Note'),
         actions: [
           IconButton(onPressed: _save, icon: const Icon(Icons.check)),
         ],
@@ -53,7 +59,7 @@ class _NewNotePageState extends State<NewNotePage> {
           children: [
             TextField(
               controller: _titleController,
-              autofocus: true,
+              autofocus: isNewNote,
               style: Theme.of(context).textTheme.titleLarge,
               decoration: const InputDecoration(
                 hintText: 'Title',

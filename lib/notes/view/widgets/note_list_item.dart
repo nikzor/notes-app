@@ -2,10 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:notes_app/notes/domain/models/note.dart';
 
 class NoteListItem extends StatelessWidget {
-  const NoteListItem({required this.note, required this.onDismissed, super.key});
+  const NoteListItem({
+    required this.note,
+    required this.onDismissed,
+    required this.onTap,
+    super.key,
+  });
 
   final Note note;
   final VoidCallback onDismissed;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +29,7 @@ class NoteListItem extends StatelessWidget {
       ),
       onDismissed: (_) => onDismissed(),
       child: ListTile(
+        onTap: onTap,
         title: Text(note.title.isEmpty ? 'Untitled' : note.title),
         subtitle: Text(
           note.content,

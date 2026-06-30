@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:notes_app/notes/domain/models/note.dart';
-import 'package:notes_app/notes/view/new_note_page.dart';
+import 'package:notes_app/notes/view/note_editor_page.dart';
 import 'package:notes_app/notes/view/widgets/note_list_item.dart';
 import 'package:notes_app/widgets/empty_stub.dart';
 
@@ -17,10 +17,23 @@ class _NotesPageState extends State<NotesPage> {
   Future<void> _createNote() async {
     final note = await Navigator.push<Note>(
       context,
-      MaterialPageRoute(builder: (_) => const NewNotePage()),
+      MaterialPageRoute(builder: (_) => const NoteEditorPage()),
     );
     if (note != null) {
       setState(() => _notes.insert(0, note));
+    }
+  }
+
+  Future<void> _openNote(Note note) async {
+    final updatedNote = await Navigator.push<Note>(
+      context,
+      MaterialPageRoute(builder: (_) => NoteEditorPage(initialNote: note)),
+    );
+    if (updatedNote != null) {
+      setState(() {
+        final index = _notes.indexWhere((n) => n.id == note.id);
+        _notes[index] = updatedNote;
+      });
     }
   }
 
@@ -50,6 +63,7 @@ class _NotesPageState extends State<NotesPage> {
                 return NoteListItem(
                   note: note,
                   onDismissed: () => _deleteNote(note),
+                  onTap: () => _openNote(note),
                 );
               },
             ),
